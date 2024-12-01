@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPA Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #9c27b0;
+        }
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 90%;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            text-align: center;
+            padding: 8px;
+        }
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+            color: #555;
+        }
+        td input, td select {
+            width: 100%;
+            border: none;
+            outline: none;
+            padding: 5px;
+            box-sizing: border-box;
+            text-align: center;
+            background-color: white;
+        }
+        td button {
+            background-color: transparent;
+            color: black;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        td button:hover {
+            background-color: #f4f4f4;
+            color: red;
+        }
+        td.remove-cell {
+            width: 50px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background-color: #9c27b0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #7b1fa2;
+        }
+        .result-table {
+            margin-top: 20px;
+            width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #388e3c;
+            font-weight: bold;
+        }
+        footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+        }
+        footer a {
+            color: #9c27b0;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>GPA Calculator</h1>
+    <table id="gpa-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Course</th>
+                <th>Credits</th>
+                <th>Grade</th>
+                <th class="remove-cell">Remove</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td><input type="text" placeholder="Course Name"></td>
+                <td><input type="number" min="1" placeholder="Credits"></td>
+                <td>
+                    <select>
+                        <option value="5.5">5+ (Excellent, A+)</option>
+                        <option value="5">5 (Very Good, A)</option>
+                        <option value="4.5">4+ (Fairly Good, B+)</option>
+                        <option value="4">4 (Good, B)</option>
+                        <option value="3.5">3+ (Satisfactory Plus, C+)</option>
+                        <option value="3">3 (Satisfactory, C)</option>
+                        <option value="2">2 (Unsatisfactory, F)</option>
+                        <option value="0">ZAL (Credit, S)</option>
+                    </select>
+                </td>
+                <td class="remove-cell"><button onclick="removeRow(this)">×</button></td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="controls">
+        <label>Add Rows: <input type="number" id="row-count" min="1" value="1"></label>
+        <button onclick="addRows()">Add</button>
+        <button onclick="calculateGPA()">Calculate GPA</button>
+        <button onclick="downloadResults()">Download as PDF</button>
+        <button onclick="clearTable()">Clear All</button>
+    </div>
+    <div id="results-container"></div>
+    <footer>
+        Powered by <a href="https://kalkulatorfrekwencjii.pl/" target="_blank" rel="noopener noreferrer">Kalkulator Frekwencji Online</a>
+    </footer>
+    <script>
+        const gradeToUSGrade = {
+            "5.5": { usGrade: "A+", gradePoints: "4.0" },
+            "5": { usGrade: "A", gradePoints: "4.0" },
+            "4.5": { usGrade: "B+", gradePoints: "3.3" },
+            "4": { usGrade: "B", gradePoints: "3.0" },
+            "3.5": { usGrade: "C+", gradePoints: "2.3" },
+            "3": { usGrade: "C", gradePoints: "2.0" },
+            "2": { usGrade: "F", gradePoints: "0.0" },
+            "0": { usGrade: "S", gradePoints: "N/A" },
+        };
+
+        let rowCounter = 2;
+
+        function addRows() {
+            const count = parseInt(document.getElementById('row-count').value) || 1;
+            const tableBody = document.getElementById('gpa-table').querySelector('tbody');
+            for (let i = 0; i < count; i++) {
+                tableBody.insertAdjacentHTML(
+                    'beforeend',
+                    `
+                    <tr>
+                        <td>${rowCounter++}</td>
+                        <td><input type="text" placeholder="Course Name"></td>
+                        <td><input type="number" min="1" placeholder="Credits"></td>
+                        <td>
+                            <select>
+                                <option value="5.5">5+ (Excellent, A+)</option>
+                                <option value="5">5 (Very Good, A)</option>
+                                <option value="4.5">4+ (Fairly Good, B+)</option>
+                                <option value="4">4 (Good, B)</option>
+                                <option value="3.5">3+ (Satisfactory Plus, C+)</option>
+                                <option value="3">3 (Satisfactory, C)</option>
+                                <option value="2">2 (Unsatisfactory, F)</option>
+                                <option value="0">ZAL (Credit, S)</option>
+                            </select>
+                        </td>
+                        <td class="remove-cell"><button onclick="removeRow(this)">×</button></td>
+                    </tr>
+                    `
+                );
+            }
+        }
+
+        function removeRow(button) {
+            button.closest('tr').remove();
+            updateRowNumbers();
+        }
+
+        function updateRowNumbers() {
+            document.querySelectorAll('#gpa-table tbody tr').forEach((row, index) => {
+                row.children[0].innerText = index + 1;
+            });
+        }
+
+        function calculateGPA() {
+            const rows = document.querySelectorAll('#gpa-table tbody tr');
+            let totalCredits = 0,
+                totalPoints = 0,
+                resultRows = '';
+
+            rows.forEach(row => {
+                const course = row.children[1].querySelector('input').value || 'Unknown';
+                const credits = parseFloat(row.children[2].querySelector('input').value) || 0;
+                const grade = row.children[3].querySelector('select').value;
+
+                totalCredits += credits;
+                const gradePoints = gradeToUSGrade[grade].gradePoints !== 'N/A' ? credits * parseFloat(gradeToUSGrade[grade].gradePoints) : 0;
+                totalPoints += gradePoints;
+
+                resultRows += `
+                    <tr>
+                        <td>${course}</td>
+                        <td>${credits}</td>
+                        <td>${grade}</td>
+                        <td>${gradeToUSGrade[grade].usGrade}</td>
+                        <td>${gradeToUSGrade[grade].gradePoints}</td>
+                    </tr>
+                `;
+            });
+
+            const gpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : 'N/A';
+
+            document.getElementById('results-container').innerHTML = `
+                <h2>Results</h2>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Credits</th>
+                            <th>Grade</th>
+                            <th>US Grade</th>
+                            <th>Grade Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>${resultRows}</tbody>
+                </table>
+                <div class="result">Cumulative GPA: ${gpa}</div>
+            `;
+        }
+
+        function downloadResults() {
+            const resultsContainer = document.getElementById('results-container').innerHTML;
+            const doc = new jspdf.jsPDF();
+            doc.html(`<h1>GPA Results</h1>${resultsContainer}`, {
+                callback: function (doc) {
+                    doc.save('GPA_Results.pdf');
+                },
+                x: 10,
+                y: 10,
+            });
+        }
+
+        function clearTable() {
+            document.getElementById('gpa-table').querySelector('tbody').innerHTML = '';
+            document.getElementById('results-container').innerHTML = '';
+            rowCounter = 1;
+            addRows();
+        }
+    </script>
+</body>
+</html>
